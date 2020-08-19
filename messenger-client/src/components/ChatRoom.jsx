@@ -1,10 +1,8 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import "./ChatRoom.css";
-import Chat from "./Chat";
 
 export default (props) => {
   var { user, onSendMessage } = props;
-  const [chats,] = useState([]);
   var ref = useRef();
 
   const sendMessage = (e) => {
@@ -19,9 +17,9 @@ export default (props) => {
     <div id="chatroom">
       <div id="chat-header">{user.name}</div>
       <div id="chat-container">
-        {chats.map((chat) => (
+        {/* {chats.map((chat) => (
           <Chat key={chat.id} {...chat} />
-        ))}
+        ))} */}
       </div>
       <div id="chat-footer">
         <input
