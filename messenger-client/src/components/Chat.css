@@ -1,0 +1,16 @@
+.bubble-container {
+  display: flex;
+}
+
+.bubble {
+  max-width: 75%;
+  padding: 10px;
+  border-radius: 20px;
+  background: red;
+  margin: 5px 0px;
+  color:white
+}
+
+.mine {
+  justify-content: flex-end;
+}
