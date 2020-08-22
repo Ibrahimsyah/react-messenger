@@ -1,41 +1,46 @@
 import React, { useRef, useEffect } from "react";
-import io from '../providers/socket'
+import io from "../providers/socket";
+import Chat from './Chat'
 import "./ChatRoom.css";
 
 export default (props) => {
-  var { user, onSendMessage, me } = props;
+  var { room, me, chats} = props;
   var ref = useRef();
   var container = useRef();
   const sendMessage = (e) => {
     if (e.key === "Enter") {
-      ref.value = "";
+      const message = ref.value;
+      if (message.length > 0) {
+        const payload = {
+          from: me.id,
+          to: room.user.id,
+          roomID: room.id,
+          message: message
+        }
+        io.emit("send-message", payload);
+        ref.value = "";
+      }
     }
   };
 
   useEffect(() => {
-    container.style.scrollBehavior = 'smooth'
+    container.style.scrollBehavior = "smooth";
     const a = container.querySelectorAll(".bubble");
     setTimeout(() => {
       container.scrollTop = a.length > 0 ? a[a.length - 1].scrollHeight : 0;
     }, 100);
-  });
+  }, []);
 
-  useEffect(() => {
-    io.emit('join-room', me.id, user.id)
-    return () => {
-      io.removeListener('join-room')
-    }
-  }, [user])
   return (
     <div id="chatroom">
       <div id="chat-header">
-        <img src={user.image} alt="" className="chat-image" />
-        <p style={{ marginLeft: "10px" }}>{user.name}</p>
+        <img src={room.user.image} alt="" className="chat-image" />
+        <p style={{ marginLeft: "10px" }}>{room.user.name}</p>
       </div>
       <div id="chat-container" ref={(el) => (container = el)}>
-        {/* {user.messages.map((chat) => (
-          <Chat key={chat.id} {...chat} name={user.name} />
-        ))} */}
+        {chats.map((chat) => (
+          <Chat key={chat.id} {...chat} name={room.user.name} />
+        ))}
       </div>
       <div id="chat-footer">
         <input

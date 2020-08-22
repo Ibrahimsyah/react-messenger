@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button } from "antd";
 import ChatRoom from "./components/ChatRoom";
-import io from './providers/socket'
+import io from "./providers/socket";
 import "./App.css";
 
-
-const objectToArray = (obj) => {
-  return Object.keys(obj).map((key) => obj[key]);
-};
+const objectToArray = (obj) => Object.keys(obj).map((key) => obj[key]);
 
 function App() {
   const [selected, setSelected] = useState(null);
@@ -16,10 +13,33 @@ function App() {
   const [isNewChat, setNewChat] = useState(false);
   const [me, setMe] = useState(null);
   const [users, setUsers] = useState([]);
+  const [room, setRoom] = useState(null);
 
   useEffect(() => {
     io.on("user-list", (res) => setUsers(res));
-    io.on('welcome', () => console.log("Someone calling"))
+    io.on("room-information", (room) => setRoom(room));
+    io.on("new-message", (message) => {
+      var list = chatList;
+
+      const user = message.from.id === me.id ? message.to : message.from;
+      if (!list[user.id]) {
+        list[user.id] = {};
+      }
+      list[user.id].user = user;
+      if (!list[user.id].messages) {
+        list[user.id].messages = [];
+      }
+      message.message.isMine = message.from.id === me.id
+      list[user.id].messages.push(message.message);
+      setChatList({ ...list });
+    });
+
+    return () => {
+      io.removeAllListeners();
+    };
+  }, [me, chatList]);
+
+  useEffect(() => {
     io.emit("get-user");
   }, []);
 
@@ -29,16 +49,24 @@ function App() {
   };
 
   const handleUserSelection = (user) => {
-    console.log(user);
     setMe(user);
     setShowModal(false);
+    io.emit("join", user.id);
   };
 
-  const handleSelectFriend = user => {
-    setSelected(user)
-    setShowModal(false)
-  }
-  const handleSendMessage = (message, roomId) => {};
+  const handleSelectFriend = (user) => {
+    io.removeListener("join-room");
+    setSelected(user);
+    setShowModal(false);
+    io.emit("join-room", me.id, user.id);
+  };
+
+  const handleItemListClick = (chat) => {
+    setSelected(chat.user)
+    io.emit('join-room', me.id, chat.user.id)
+  };
+
+  const populateChat = (id) => chatList[id] ? chatList[id].messages : []
 
   return (
     <>
@@ -73,28 +101,23 @@ function App() {
               className="search-bar"
             />
           </div>
-          {/* {messages.map((message, idx) => (
+          {objectToArray(chatList).map((message, idx) => (
             <div
               className="chat"
-              onClick={() => handleClick(message)}
+              onClick={() => handleItemListClick(message)}
               key={idx}
             >
-              <img src={message.image} alt="" className="chat-image" />
+              <img src={message.user.image} alt="" className="chat-image" />
               <div className="chat-body">
-                <h4>{message.name}</h4>
+                <h4>{message.user.name}</h4>
                 {message.messages[message.messages.length - 1].message}
               </div>
             </div>
-          ))} */}
+          ))}
         </div>
         <div className="right">
-          {selected ? (
-            <ChatRoom
-              user={selected}
-              me={me}
-              chats={chatList[selected.user_id]}
-              onSendMessage={handleSendMessage}
-            />
+          {room ? (
+            <ChatRoom room={room} me={me} chats={populateChat(selected.id)} />
           ) : (
             <div className="welcome">
               <img
